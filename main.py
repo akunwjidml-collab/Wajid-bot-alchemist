@@ -1,145 +1,112 @@
-import os
-import time
 import requests
 import pandas as pd
 import numpy as np
+from bs4 import BeautifulSoup
+from datetime import datetime
+import os
 
-# =======================================================
-# TINGGAL GANTI DUA BARIS DI BAWAH INI PAKAI DATA LO
-# =======================================================
-TOKEN = "8839152051:AAHF5NIlFruU5ZsT5AymlliVlJGZLDapY2Q"  # <--- Ganti pakai Token Bot Telegram lo
-CHAT_ID = "8440896866"                            # <--- Ganti pakai Chat ID Telegram lo
-# =======================================================
+# CONFIGURATION (Ambil data dari environment token lo)
+TOKEN = os.getenv('8839152051:AAHF5NIlFruU5ZsT5AymlliVlJGZLDapY2Q')
+CHAT_ID = os.getenv('8440896866')
 
-INTERVAL = "1h" # HTF Level (1 Jam) Sesuai SOP Dokumen Alchemist
-
-DAFTAR_MARKET = {
-    "XAUUSD": "GC=F",
-    "BTCUSD": "BTC-USD",
-    "EURUSD": "EURUSD=X",
-    "USDJPY": "USDJPY=X",
-    "GBPUSD": "GBPUSD=X",
-    "NASDAQ": "NQ=F"
-}
-
-def kirim_telegram(pesan):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": pesan, "parse_mode": "Markdown"}
+def get_forexfactory_high_impact():
+    """Mengambil data kalender ekonomi High Impact USD langsung dari Feed Forex Factory"""
     try:
-        requests.post(url, json=payload)
-    except Exception as e:
-        print("Gagal kirim tele:", e)
-
-def ambil_data(simbol_yahoo):
-    url = f"https://query1.financeapi.com/v8/finance/chart/{simbol_yahoo}?interval={INTERVAL}&range=5d"
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    res = requests.get(url, headers=headers).json()
-    
-    candles = res['chart']['result'][0]['indicators']['quote'][0]
-    timestamps = res['chart']['result'][0]['timestamp']
-    
-    df = pd.DataFrame({
-        'time': pd.to_datetime(timestamps, unit='s'),
-        'open': candles['open'],
-        'high': candles['high'],
-        'low': candles['low'],
-        'close': candles['close']
-    }).dropna()
-    return df
-
-def hitung_advanced_alchemist(df, nama_market):
-    # Mengambil data 48 bar untuk memetakan Market Structure & Liquidity Pools
-    period = 48
-    if len(df) < period:
-        period = len(df)
-    
-    recent_df = df.tail(period).copy()
-    
-    # 1. Deteksi Liquidity Pool (Maksimum High dan Minimum Low murni)
-    liq_high = recent_df['high'].max()
-    liq_low = recent_df['low'].min()
-    harga_sekarang = df['close'].iloc[-1]
-    
-    # 2. Cari Zona OCL (Open-Close Level) untuk validasi Hidden Base Order Block
-    # Mendeteksi area body candle penutupan yang sejajar/sejajar terdekat
-    recent_df['body_max'] = recent_df[['open', 'close']].max(axis=1)
-    recent_df['body_min'] = recent_df[['open', 'close']].min(axis=1)
-    
-    ocl_resistance = recent_df['body_max'].max() # Batas atas OCL Base
-    ocl_support = recent_df['body_min'].min()    # Batas bawah OCL Base
-    
-    # 3. Hitung 50% Midpoint Order Block (Equilibrium Zone) sesuai materi lo
-    ob_mid_buy = (liq_low + ocl_support) / 2
-    ob_mid_sell = (liq_high + ocl_resistance) / 2
-    
-    is_crypto_or_index = nama_market in ["BTCUSD", "NASDAQ"]
-    
-    # --- FORMULA TRADING MECHANICAL (ANTI LIQUIDITY SWEEP) ---
-    
-    # SETUP BUY (Menunggu Liquidity Sweep di bawah Low, Entry di 50% OB)
-    if is_crypto_or_index:
-        sl_buy = ob_mid_buy * 0.985 # SL 1.5% aman dari noise
-        jarak_resiko_buy = ob_mid_buy - sl_buy
-        tp_buy = ob_mid_buy + (jarak_resiko_buy * 2.5) # RR 1:2.5 Premium target
-    else:
-        pengali_pips = 0.1 if "JPY" in nama_market else 0.0050 if "USD" in nama_market else 5.0
-        sl_buy = ob_mid_buy - pengali_pips # SL 50 Pips di bawah zona OB
-        jarak_resiko_buy = ob_mid_buy - sl_buy
-        tp_buy = ob_mid_buy + (jarak_resiko_buy * 2.5)
-
-    # SETUP SELL (Menunggu Liquidity Sweep di atas High, Entry di 50% OB)
-    if is_crypto_or_index:
-        sl_sell = ob_mid_sell * 1.015 # SL 1.015%
-        jarak_resiko_sell = sl_sell - ob_mid_sell
-        tp_sell = ob_mid_sell - (jarak_resiko_sell * 2.5)
-    else:
-        pengali_pips = 0.1 if "JPY" in nama_market else 0.0050 if "USD" in nama_market else 5.0
-        sl_sell = ob_mid_sell + pengali_pips # SL 50 Pips di atas zona OB
-        jarak_resiko_sell = sl_sell - ob_mid_sell
-        tp_sell = ob_mid_sell - (jarak_resiko_sell * 2.5)
-
-    fmt = ".2f" if (is_crypto_or_index or "JPY" in nama_market or "XAU" in nama_market) else ".5f"
-
-    pesan = f"🔮 *ALCHEMIST ADVANCED V4: {nama_market}*\n"
-    pesan += f"Harga Saat Ini: `{harga_sekarang:{fmt}}`\n\n"
-    pesan += f"🚨 *Liquidity Pools (HTF Target):*\n"
-    pesan += f"   • Sell-Side Liq (High): `{liq_high:{fmt}}`\n"
-    pesan += f"   • Buy-Side Liq (Low): `{liq_low:{fmt}}`\n\n"
-    pesan += f"📦 *OCL Hidden Base Zone:*\n"
-    pesan += f"   • Base Supply: `{ocl_resistance:{fmt}}`\n"
-    pesan += f"   • Base Demand: `{ocl_support:{fmt}}`\n"
-    pesan += f"─" * 15 + "\n"
-    
-    # Deteksi Setup Proporsional Berdasarkan Siklus Discount vs Premium Market
-    if (harga_sekarang - liq_low) < (liq_high - harga_sekarang):
-        pesan += f"💡 *INSTITUTIONAL SETUP: BUY LIMIT*\n"
-        pesan += f"🟢 Entry (50% Mid OB): `{ob_mid_buy:{fmt}}`\n"
-        pesan += f"🔴 Stop Loss (Protected): `{sl_buy:{fmt}}`\n"
-        pesan += f"🔵 Take Profit (Premium): `{tp_buy:{fmt}}`\n"
-    else:
-        pesan += f"💡 *INSTITUTIONAL SETUP: SELL LIMIT*\n"
-        pesan += f"🟢 Entry (50% Mid OB): `{ob_mid_sell:{fmt}}`\n"
-        pesan += f"🔴 Stop Loss (Protected): `{sl_sell:{fmt}}`\n"
-        pesan += f"🔵 Take Profit (Discount): `{tp_sell:{fmt}}`\n"
+        # Mengambil xml feed resmi gratisan dari Forex Factory yang sangat ringan
+        url = "https://www.forexfactory.com/ff_calendar_thisweek.xml"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        response = requests.get(url, headers=headers, timeout=10)
         
-    pesan += f"⚠️ _SOP: Tunggu Liquidity Sweep terkonfirmasi, RR 1:2.5_\n\n"
-    return pesan
-
-def main():
-    print("Memulai pemindaian kode Alchemist Advanced V4...")
-    laporan_total = "🦅 *ALCHEMIST V4 ANTI-LIQUIDITY SCANNER* 🦅\n\n"
-    
-    for nama_market, simbol_yahoo in DAFTAR_MARKET.items():
-        try:
-            df = ambil_data(simbol_yahoo)
-            laporan_market = hitung_advanced_alchemist(df, nama_market)
-            laporan_total += laporan_market
-            time.sleep(1)
-        except Exception as e:
-            print(f"Gagal memproses {nama_market}: {e}")
+        hari_ini = datetime.utcnow().strftime('%m-%d-%Y') # Format tgl feed FF
+        news_bintang_3 = []
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'xml')
+            events = soup.find_all('event')
             
-    kirim_telegram(laporan_total)
-    print("Laporan Advanced Sniper V4 Sukses Dikirim!")
+            for event in events:
+                # Saringan Super Ketat: Hanya USD, Hanya Hari Ini, dan Hanya HIGH Impact (Bintang 3 Red Folder)
+                currency = event.find('currency').text if event.find('currency') else ''
+                date = event.find('date').text if event.find('date') else ''
+                impact = event.find('impact').text if event.find('impact') else ''
+                
+                if currency == 'USD' and date == hari_ini and impact == 'High':
+                    title = event.find('title').text if event.find('title') else 'News'
+                    time = event.find('time').text if event.find('time') else 'N/A'
+                    
+                    news_bintang_3.append(f"• ⏰ **{time}** | {title}")
+        
+        if news_bintang_3:
+            pesan_news = "🚨 **HIGH IMPACT NEWS USD HARI INI (FOREX FACTORY RED FOLDER)** 🚨\n" + "\n".join(news_bintang_3)
+            pesan_news += "\n\n⚠️ *SOP Alchemist: Waspada lonjakan volatilitas ekstrim & manipulasi spread 30 menit sebelum jam rilis di atas!*"
+            return pesan_news
+        else:
+            return "🟢 **NEWS FILTER (Forex Factory):** Hari ini aman bang, tidak ada High Impact News USD (Bintang 3/Red Folder)."
+            
+    except Exception as e:
+        return "⚠️ **NEWS FILTER WARNING:** Gagal koneksi ke server Forex Factory. Pantau manual webnya untuk rilis data USD malam ini!"
+
+def hitung_alchemist_v5_2():
+    """Fungsi utama scan market SMC / Alchemist V5.2"""
+    pairs = ['GC=F', 'BTC-USD', 'EURUSD=X'] # XAUUSD, BTC, EURUSD
+    pesan_total = "🦅 **ALCHEMIST SNIPER V5.2 REPORT** 🦅\n───────────────────────\n"
+    
+    # 1. Tarik info kalender Forex Factory di bagian paling atas laporan
+    info_news = get_forexfactory_high_impact()
+    pesan_total += f"{info_news}\n───────────────────────\n"
+    
+    # 2. Proses Analisis 7 Materi Sakral (OCL, 50% Mid OB, Liquidity Pools)
+    for pair in pairs:
+        nama_tampilan = "XAUUSD (GOLD)" if pair == 'GC=F' else ("BTCUSD" if pair == 'BTC-USD' else "EURUSD")
+        pesan_total += f"📊 **Market: {nama_tampilan}**\n"
+        
+        try:
+            # Ambil data H1 dari Yahoo Finance
+            url = f"https://query1.financeapi.com/v8/finance/chart/{pair}?interval=1h&range=5d"
+            res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}).json()
+            
+            result = res['chart']['result'][0]
+            opens = result['indicators']['quote'][0]['open']
+            closes = result['indicators']['quote'][0]['close']
+            highs = result['indicators']['quote'][0]['high']
+            lows = result['indicators']['quote'][0]['low']
+            
+            # Materi OCL Base Zone & Strong OB (Body Candle Tertebal)
+            body_sizes = [abs(c - o) for o, c in zip(opens, closes) if o is not None and c is not None]
+            idx_strong = np.argmax(body_sizes)
+            
+            ocl_open = opens[idx_strong]
+            ocl_close = closes[idx_strong]
+            mid_ob = (ocl_open + ocl_close) / 2 # Materi 50% Midpoint OB
+            
+            # Materi Liquidity Pools (SMC Swing High/Low 24 Jam Terakhir)
+            liq_high = max(highs[-24:])
+            liq_low = min(lows[-24:])
+            
+            # Penentuan Tipe Order & Setup Zona Diskon/Premium
+            harga_sekarang = closes[-1]
+            if harga_sekarang > mid_ob:
+                tipe_order = "SELL LIMIT (Premium / Inducement Area)"
+                entry = mid_ob
+                sl = liq_high + (liq_high * 0.001)
+                tp = liq_low
+            else:
+                tipe_order = "BUY LIMIT (Discount / Stop Hunt Area)"
+                entry = mid_ob
+                sl = liq_low - (liq_low * 0.001)
+                tp = liq_high
+
+            pesan_total += f"• Setup: **{tipe_order}**\n"
+            pesan_total += f"• Entry (50% OB): `{entry:.2f}`\n"
+            pesan_total += f"• Stop Loss (SL): `{sl:.2f}`\n"
+            pesan_total += f"• Take Profit (TP): `{tp:.2f}`\n\n"
+            
+        except Exception as e:
+            pesan_total += f"❌ Gagal scan pair ini: {str(e)}\n\n"
+            
+    # 3. Tembak Laporan ke Telegram Akun Lo
+    url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    requests.post(url_tele, json={'chat_id': CHAT_ID, 'text': pesan_total, 'parse_mode': 'Markdown'})
 
 if __name__ == "__main__":
-    main()
+    hitung_alchemist_v5_2()
