@@ -129,7 +129,7 @@
 
         for (const pair of pairs) {
             try {
-                // Menggunakan proxy AllOrigins agar browser Android tidak terkena block CORS Yahoo Finance
+                // Menggunakan proxy AllOrigins agar bypass blokir CORS Yahoo Finance di browser
                 const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://query1.financeapi.com/v8/finance/chart/${pair.id}?interval=1h&range=5d`)}`;
                 const response = await fetch(url);
                 const rawData = await response.json();
@@ -189,7 +189,7 @@
             }
         }
 
-        // Kirim sinyal langsung ke Telegram lo lewat Fetch API browser
+        // Tembak sinyal langsung ke bot Telegram via fetch API
         try {
             const urlTele = `https://api.telegram.org/bot${token}/sendMessage`;
             await fetch(urlTele, {
