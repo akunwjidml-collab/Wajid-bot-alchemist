@@ -43,11 +43,16 @@ def get_forexfactory_high_impact():
     except Exception as e:
         return "⚠️ **NEWS FILTER WARNING:** Pantau ForexFactory manual malam ini!"
 
-def hitung_alchemist_v5_2():
-    """Fungsi utama scan market SMC / Alchemist V5.2"""
+def hitung_alchemist_v5_3():
+    """Fungsi utama scan market SMC / Alchemist V5.3"""
     pairs = ['GC=F', 'BTC-USD', 'EURUSD=X']
-    pesan_total = "🦅 **ALCHEMIST SNIPER V5.2 REPORT** 🦅\n───────────────────────\n"
     
+    # 📢 DI SINI TAMBAHAN SAKRALNYA BANG: Menyapa "Sekarang open candle H1" di baris paling atas!
+    pesan_total = "🔔 **SEKARANG OPEN CANDLE H1** 🔔\n"
+    pesan_total += "🦅 **ALCHEMIST SNIPER V5.3 REPORT** 🦅\n"
+    pesan_total += "───────────────────────\n"
+    
+    # Ambil info berita Forex Factory
     info_news = get_forexfactory_high_impact()
     pesan_total += f"{info_news}\n───────────────────────\n"
     
@@ -95,9 +100,9 @@ def hitung_alchemist_v5_2():
         except Exception as e:
             pesan_total += f"❌ Gagal scan pair ini: {str(e)}\n\n"
             
-    # Kirim ke Telegram
+    # Kirim ke Telegram lo
     url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url_tele, json={'chat_id': CHAT_ID, 'text': pesan_total, 'parse_mode': 'Markdown'})
 
 if __name__ == "__main__":
-    hitung_alchemist_v5_2()
+    hitung_alchemist_v5_3()
