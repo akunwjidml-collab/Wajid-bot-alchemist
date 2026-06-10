@@ -5,208 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alchemist Sniper V6.0 Panel</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            padding: 20px;
-            text-align: center;
-        }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #1e293b;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        }
-        h1 { color: #38bdf8; margin-bottom: 5px; font-size: 24px; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 15px; box-shadow: 0 10px 15px rgba(0,0,0,0.3); }
+        h1 { color: #38bdf8; font-size: 24px; margin-bottom: 5px; }
         p { color: #94a3b8; font-size: 14px; }
-        .input-group {
-            margin: 15px 0;
-            text-align: left;
-        }
+        .input-group { margin: 15px 0; text-align: left; }
         label { display: block; font-weight: bold; margin-bottom: 5px; color: #cbd5e1; }
-        input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #475569;
-            background: #334155;
-            color: #fff;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #0284c7;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: 0.2s;
-        }
-        button:hover { background: #0369a1; }
-        #log {
-            margin-top: 20px;
-            padding: 12px;
-            background: #0f172a;
-            border-left: 4px solid #38bdf8;
-            text-align: left;
-            font-family: monospace;
-            font-size: 13px;
-            border-radius: 4px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
+        input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #334155; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        #log { margin-top: 20px; padding: 12px; background: #0f172a; border-left: 4px solid #38bdf8; text-align: left; font-family: monospace; font-size: 13px; border-radius: 4px; max-height: 150px; overflow-y: auto; }
         .status-run { color: #4ade80; font-weight: bold; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <h1>🦅 ALCHEMIST PANEL V6.0</h1>
     <p>Scanner SMC & Candle H1 Alert (Web Android Edition)</p>
     <hr style="border-color: #334155;">
-
     <div class="input-group">
-        <label for="token">Token Bot Telegram:</label>
-        <input type="text" id="token" value="8839152051:AAHF5NIlFruU5ZsT5AymlliVlJGZLDapY2Q" readonly style="background: #1e293b; color: #64748b; border-color: #334155;">
+        <label>Token Bot Telegram:</label>
+        <input type="text" id="token" value="8839152051:AAHF5NIlFruU5ZsT5AymlliVlJGZLDapY2Q" readonly style="background: #1e293b; color: #64748b;">
     </div>
-
     <div class="input-group">
-        <label for="chatid">Chat ID Telegram:</label>
-        <input type="text" id="chatid" value="8440896866" readonly style="background: #1e293b; color: #64748b; border-color: #334155;">
+        <label>Chat ID Telegram:</label>
+        <input type="text" id="chatid" value="8440896866" readonly style="background: #1e293b; color: #64748b;">
     </div>
-
     <button onclick="pancingScannerManual()">🚀 JALANKAN SCANNER SEKARANG</button>
-
-    <div id="log">Status: Mengunci Token & Chat ID... Siap digunakan!</div>
-    
-    <p style="font-size: 11px; margin-top: 15px; color: #64748b;">
-        *Biarkan halaman ini tetap terbuka di Chrome HP lo agar auto-refresh setiap jam market bekerja.
-    </p>
+    <div id="log">Status: Token & Chat ID Terkunci! Siap eksekusi...</div>
 </div>
-
 <script>
-    // Fitur Auto Run Setiap Pergantian Jam (Menit 00 Tepat)
+    // Jalankan otomatis setiap menit 00 (Awal jam baru H1)
     setInterval(() => {
-        const sekarang = new Date();
-        if (sekarang.getMinutes() === 0 && sekarang.getSeconds() === 0) {
-            updateLog("🔔 Waktunya Open Candle H1! Memulai auto-scan...");
-            eksekusiAlchemistHTML();
+        const skrg = new Date();
+        if (skrg.getMinutes() === 0 && skrg.getSeconds() === 0) { 
+            updateLog("🔔 Pergantian jam! Memulai otomatis scan...");
+            eksekusiAlchemistHTML(); 
         }
     }, 1000);
 
-    function pancingScannerManual() {
-        updateLog("🔄 Memancing scan market secara manual...");
-        eksekusiAlchemistHTML();
+    function pancingScannerManual() { 
+        updateLog("🔄 Memancing scan market secara manual..."); 
+        eksekusiAlchemistHTML(); 
     }
 
-    function updateLog(teks) {
-        const logDiv = document.getElementById("log");
-        const waktu = new Date().toLocaleTimeString();
-        logDiv.innerHTML = `[${waktu}] ${teks}<br>` + logDiv.innerHTML;
+    function updateLog(t) { 
+        const d = document.getElementById("log"); 
+        d.innerHTML = `[${new Date().toLocaleTimeString()}] ${t}<br>` + d.innerHTML; 
     }
 
     async function eksekusiAlchemistHTML() {
-        const token = document.getElementById("token").value.trim();
-        const chatId = document.getElementById("chatid").value.trim();
-
+        const token = "8839152051:AAHF5NIlFruU5ZsT5AymlliVlJGZLDapY2Q";
+        const chatId = "8440896866";
         updateLog("📡 Menghubungi pasar global (Yahoo Finance)...");
         
-        let pesanTotal = "🔔 **SEKARANG OPEN CANDLE H1** 🔔\n🦅 **ALCHEMIST SNIPER V6.0 REPORT** 🦅\n───────────────────────\n";
-        pesanTotal += "🟢 **NEWS FILTER:** Fitur News dilewati demi kecepatan respons HTML.\n───────────────────────\n";
-
-        const pairs = [
-            { id: 'GC=F', nama: 'XAUUSD (GOLD)' },
-            { id: 'BTC-USD', nama: 'BTCUSD' },
-            { id: 'EURUSD=X', nama: 'EURUSD' }
-        ];
-
-        for (const pair of pairs) {
+        let msg = "🔔 **SEKARANG OPEN CANDLE H1** 🔔\n🦅 **ALCHEMIST SNIPER V6.0 REPORT** 🦅\n───────────────────────\n";
+        const pairs = [{id:'GC=F', nama:'XAUUSD (GOLD)'}, {id:'BTC-USD', nama:'BTCUSD'}, {id:'EURUSD=X', nama:'EURUSD'}];
+        
+        for (const p of pairs) {
             try {
-                // Menggunakan proxy AllOrigins agar bypass blokir CORS Yahoo Finance di browser
-                const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://query1.financeapi.com/v8/finance/chart/${pair.id}?interval=1h&range=5d`)}`;
-                const response = await fetch(url);
-                const rawData = await response.json();
-                const res = JSON.parse(rawData.contents);
-
-                const result = res.chart.result[0];
-                const opens = result.indicators.quote[0].open;
-                const closes = result.indicators.quote[0].close;
-                const highs = result.indicators.quote[0].high;
-                const lows = result.indicators.quote[0].low;
-
-                let bodySizes = [];
-                for(let i=0; i<opens.length; i++) {
-                    if(opens[i] !== null && closes[i] !== null) {
-                        bodySizes.push({ idx: i, size: Math.abs(closes[i] - opens[i]) });
-                    }
-                }
+                const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://query1.financeapi.com/v8/finance/chart/${p.id}?interval=1h&range=5d`)}`);
+                const raw = await r.json(); 
+                const res = JSON.parse(raw.contents);
+                const data = res.chart.result[0];
+                const o = data.indicators.quote[0].open; 
+                const c = data.indicators.quote[0].close;
+                const h = data.indicators.quote[0].high; 
+                const l = data.indicators.quote[0].low;
                 
-                bodySizes.sort((a, b) => b.size - a.size);
-                const idxStrong = bodySizes[0].idx;
-
-                const oclOpen = opens[idxStrong];
-                const oclClose = closes[idxStrong];
-                const midOb = (oclOpen + oclClose) / 2;
-
-                const validHighs = highs.filter(h => h !== null).slice(-24);
-                const validLows = lows.filter(l => l !== null).slice(-24);
-                const liqHigh = Math.max(...validHighs);
-                const liqLow = Math.min(...validLows);
-
-                const hargaSekarang = closes[closes.length - 1];
-                let tipeOrder, entry, sl, tp;
-
-                if (hargaSekarang > midOb) {
-                    tipeOrder = "SELL LIMIT (Premium / Inducement Area)";
-                    entry = midOb;
-                    sl = liqHigh + (liqHigh * 0.001);
-                    tp = liqLow;
-                } else {
-                    tipeOrder = "BUY LIMIT (Discount / Stop Hunt Area)";
-                    entry = midOb;
-                    sl = liqLow - (liqLow * 0.001);
-                    tp = liqHigh;
+                let sizes = [];
+                for(let i=0; i<o.length; i++) { 
+                    if(o[i]!==null && c[i]!==null) sizes.push({idx:i, s:Math.abs(c[i]-o[i])}); 
                 }
-
-                pesanTotal += `📊 **Market: ${pair.nama}**\n`;
-                pesanTotal += `• Setup: **${tipeOrder}**\n`;
-                pesanTotal += `• Entry (50% OB): \`${entry.toFixed(2)}\`\n`;
-                pesanTotal += `• Setup SL: \`${sl.toFixed(2)}\`\n`;
-                pesanTotal += `• Setup TP: \`${tp.toFixed(2)}\`\n\n`;
-
-                updateLog(`✓ Sukses menganalisis ${pair.nama}`);
-
-            } catch (err) {
-                pesanTotal += `❌ Gagal scan market ${pair.nama}: ${err.message}\n\n`;
-                updateLog(`❌ Gagal menarik data ${pair.nama}`);
+                sizes.sort((a,b)=>b.s-a.s); 
+                const idx = sizes[0].idx;
+                const midOb = (o[idx] + c[idx]) / 2;
+                const liqH = Math.max(...h.filter(x=>x!==null).slice(-24));
+                const liqL = Math.min(...l.filter(x=>x!==null).slice(-24));
+                const price = c[c.length-1];
+                
+                let type = price > midOb ? "SELL LIMIT (Premium Area)" : "BUY LIMIT (Discount Area)";
+                let entry = midOb;
+                let sl = price > midOb ? liqH*1.001 : liqL*0.999;
+                let tp = price > midOb ? liqL : liqH;
+                
+                msg += `📊 **Market: ${p.nama}**\n• Setup: **${type}**\n• Entry: \`${entry.toFixed(2)}\`\n• SL: \`${sl.toFixed(2)}\`\n• TP: \`${tp.toFixed(2)}\`\n\n`;
+                updateLog(`✓ Sukses scan ${p.nama}`);
+            } catch(e) { 
+                msg += `❌ Gagal scan ${p.nama}\n\n`; 
+                updateLog(`❌ Gagal scan ${p.nama}`);
             }
         }
-
-        // Tembak sinyal langsung ke bot Telegram via fetch API
+        
         try {
-            const urlTele = `https://api.telegram.org/bot${token}/sendMessage`;
-            await fetch(urlTele, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: pesanTotal,
-                    parse_mode: 'Markdown'
-                })
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
             });
             updateLog("<span class='status-run'>🚀 BERHASIL DIKIRIM KE TELEGRAM!</span>");
-        } catch (teleErr) {
-            updateLog("❌ Gagal mengirim pesan ke Telegram: " + teleErr.message);
+        } catch(e) { 
+            updateLog("❌ Gagal kirim ke Telegram"); 
         }
     }
 </script>
-
 </body>
 </html>
