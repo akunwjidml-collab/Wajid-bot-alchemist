@@ -1,9 +1,9 @@
 name: Jalankan Bot Alchemist H1
 
 on:
-  workflow_dispatch: # Biar abang bisa klik tombol manual kapan aja
+  workflow_dispatch:
   schedule:
-    - cron: '0 * * * *' # OTOMATIS JALAN SENDIRI SETIAP PERGANTIAN JAM (MENIT 00)
+    - cron: '0 * * * *'
 
 jobs:
   run-bot:
