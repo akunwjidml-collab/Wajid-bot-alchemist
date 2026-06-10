@@ -31,81 +31,48 @@
         <input type="text" id="chatid" value="8440896866" readonly style="background: #1e293b; color: #64748b;">
     </div>
     <button onclick="pancingScannerManual()">🚀 JALANKAN SCANNER SEKARANG</button>
-    <div id="log">Status: Token & Chat ID Terkunci! Siap eksekusi...</div>
+    <div id="log">Status: Token Terkunci! Siap eksekusi manual...</div>
 </div>
 <script>
-    // Jalankan otomatis setiap menit 00 (Awal jam baru H1)
     setInterval(() => {
         const skrg = new Date();
-        if (skrg.getMinutes() === 0 && skrg.getSeconds() === 0) { 
-            updateLog("🔔 Pergantian jam! Memulai otomatis scan...");
-            eksekusiAlchemistHTML(); 
-        }
+        if (skrg.getMinutes() === 0 && skrg.getSeconds() === 0) { eksekusiAlchemistHTML(); }
     }, 1000);
-
-    function pancingScannerManual() { 
-        updateLog("🔄 Memancing scan market secara manual..."); 
-        eksekusiAlchemistHTML(); 
-    }
-
-    function updateLog(t) { 
-        const d = document.getElementById("log"); 
-        d.innerHTML = `[${new Date().toLocaleTimeString()}] ${t}<br>` + d.innerHTML; 
-    }
-
+    function pancingScannerManual() { updateLog("🔄 Memancing scan market secara manual..."); eksekusiAlchemistHTML(); }
+    function updateLog(t) { const d = document.getElementById("log"); d.innerHTML = `[${new Date().toLocaleTimeString()}] ${t}<br>` + d.innerHTML; }
     async function eksekusiAlchemistHTML() {
         const token = "8839152051:AAHF5NIlFruU5ZsT5AymlliVlJGZLDapY2Q";
         const chatId = "8440896866";
         updateLog("📡 Menghubungi pasar global (Yahoo Finance)...");
-        
         let msg = "🔔 **SEKARANG OPEN CANDLE H1** 🔔\n🦅 **ALCHEMIST SNIPER V6.0 REPORT** 🦅\n───────────────────────\n";
         const pairs = [{id:'GC=F', nama:'XAUUSD (GOLD)'}, {id:'BTC-USD', nama:'BTCUSD'}, {id:'EURUSD=X', nama:'EURUSD'}];
-        
         for (const p of pairs) {
             try {
                 const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://query1.financeapi.com/v8/finance/chart/${p.id}?interval=1h&range=5d`)}`);
-                const raw = await r.json(); 
-                const res = JSON.parse(raw.contents);
+                const raw = await r.json(); const res = JSON.parse(raw.contents);
                 const data = res.chart.result[0];
-                const o = data.indicators.quote[0].open; 
-                const c = data.indicators.quote[0].close;
-                const h = data.indicators.quote[0].high; 
-                const l = data.indicators.quote[0].low;
-                
+                const o = data.indicators.quote[0].open; const c = data.indicators.quote[0].close;
+                const h = data.indicators.quote[0].high; const l = data.indicators.quote[0].low;
                 let sizes = [];
-                for(let i=0; i<o.length; i++) { 
-                    if(o[i]!==null && c[i]!==null) sizes.push({idx:i, s:Math.abs(c[i]-o[i])}); 
-                }
-                sizes.sort((a,b)=>b.s-a.s); 
-                const idx = sizes[0].idx;
+                for(let i=0; i<o.length; i++) { if(o[i]!==null && c[i]!==null) sizes.push({idx:i, s:Math.abs(c[i]-o[i])}); }
+                sizes.sort((a,b)=>b.s-a.s); const idx = sizes[0].idx;
                 const midOb = (o[idx] + c[idx]) / 2;
                 const liqH = Math.max(...h.filter(x=>x!==null).slice(-24));
                 const liqL = Math.min(...l.filter(x=>x!==null).slice(-24));
                 const price = c[c.length-1];
-                
                 let type = price > midOb ? "SELL LIMIT (Premium Area)" : "BUY LIMIT (Discount Area)";
-                let entry = midOb;
-                let sl = price > midOb ? liqH*1.001 : liqL*0.999;
-                let tp = price > midOb ? liqL : liqH;
-                
+                let entry = midOb, sl = price > midOb ? liqH*1.001 : liqL*0.999, tp = price > midOb ? liqL : liqH;
                 msg += `📊 **Market: ${p.nama}**\n• Setup: **${type}**\n• Entry: \`${entry.toFixed(2)}\`\n• SL: \`${sl.toFixed(2)}\`\n• TP: \`${tp.toFixed(2)}\`\n\n`;
                 updateLog(`✓ Sukses scan ${p.nama}`);
-            } catch(e) { 
-                msg += `❌ Gagal scan ${p.nama}\n\n`; 
-                updateLog(`❌ Gagal scan ${p.nama}`);
-            }
+            } catch(e) { msg += `❌ Gagal scan ${p.nama}\n\n`; }
         }
-        
         try {
             await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
             });
             updateLog("<span class='status-run'>🚀 BERHASIL DIKIRIM KE TELEGRAM!</span>");
-        } catch(e) { 
-            updateLog("❌ Gagal kirim ke Telegram"); 
-        }
+        } catch(e) { updateLog("❌ Gagal kirim ke Tele"); }
     }
 </script>
 </body>
