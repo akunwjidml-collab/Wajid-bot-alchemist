@@ -34,7 +34,6 @@
     <div id="log">Status: HTML Ready! Siap di-run via web...</div>
 </div>
 <script>
-    // Scanner otomatis pas pergantian jam candle H1
     setInterval(() => {
         const skrg = new Date();
         if (skrg.getMinutes() === 0 && skrg.getSeconds() === 0) { eksekusiAlchemistHTML(); }
@@ -53,16 +52,17 @@
     async function eksekusiAlchemistHTML() {
         const token = "8839152051:AAHF5NIlFruU5ZsT5AymlliVlJGZLDapY2Q";
         const chatId = "8440896866";
-        updateLog("📡 Menghubungi pasar global (Yahoo Finance)...");
         
         let msg = "🔔 **SEKARANG OPEN CANDLE H1** 🔔\n🦅 **ALCHEMIST SNIPER V6.0 REPORT** 🦅\n───────────────────────\n";
         const pairs = [{id:'GC=F', nama:'XAUUSD (GOLD)'}, {id:'BTC-USD', nama:'BTCUSD'}, {id:'EURUSD=X', nama:'EURUSD'}];
         
         for (const p of pairs) {
             try {
-                const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://query1.financeapi.com/v8/finance/chart/${p.id}?interval=1h&range=5d`)}`);
-                const raw = await r.json(); 
-                const res = JSON.parse(raw.contents);
+                updateLog(`📡 Menghubungi bursa data ${p.nama}...`);
+                // Menggunakan jembatan proxy corsproxy.io agar tembus di browser Android
+                const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://query1.financeapi.com/v8/finance/chart/${p.id}?interval=1h&range=5d`)}`);
+                const res = await r.json();
+                
                 const data = res.chart.result[0];
                 const o = data.indicators.quote[0].open; 
                 const c = data.indicators.quote[0].close;
@@ -86,21 +86,28 @@
                 let tp = price > midOb ? liqL : liqH;
                 
                 msg += `📊 **Market: ${p.nama}**\n• Setup: **${type}**\n• Entry: \`${entry.toFixed(2)}\`\n• SL: \`${sl.toFixed(2)}\`\n• TP: \`${tp.toFixed(2)}\`\n\n`;
-                updateLog(`✓ Sukses scan ${p.nama}`);
+                updateLog(`   ✓ Sukses kalkulasi analisis ${p.nama}`);
             } catch(e) { 
                 msg += `❌ Gagal scan ${p.nama}\n\n`; 
+                updateLog(`   ❌ Gagal menarik data ${p.nama}`);
             }
         }
         
         try {
-            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            updateLog("📤 Mengirim hasil laporan ke bot Telegram...");
+            const teleRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST', 
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
             });
-            updateLog("<span class='status-run'>🚀 BERHASIL DIKIRIM KE TELEGRAM!</span>");
+            
+            if(teleRes.ok) {
+                updateLog("<span class='status-run'>🚀 BERHASIL DIKIRIM KE TELEGRAM! SILAKAN CEK BOT LU!</span>");
+            } else {
+                updateLog("❌ Telegram merespon tapi menolak pengiriman");
+            }
         } catch(e) { 
-            updateLog("❌ Gagal kirim ke Tele"); 
+            updateLog("❌ Eror parah saat mengirim ke Telegram"); 
         }
     }
 </script>
